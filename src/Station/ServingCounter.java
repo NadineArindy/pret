@@ -12,11 +12,13 @@ import java.util.Set;
 public class ServingCounter extends Station {
     private OrderManager orderManager;
     private KitchenLoop kitchenLoop;
+    private java.util.function.Consumer<Integer> onScoreUpdate;
 
-    public ServingCounter(String id, Position position, char symbol, OrderManager orderManager, KitchenLoop kitchenLoop) {
+    public ServingCounter(String id, Position position, char symbol, OrderManager orderManager, KitchenLoop kitchenLoop, java.util.function.Consumer<Integer> onScoreUpdate) {
         super(id, position, symbol);
         this.orderManager = orderManager;
         this.kitchenLoop = kitchenLoop;
+        this.onScoreUpdate = onScoreUpdate;
     }
 
     public OrderManager getOrderManager() {
@@ -64,8 +66,10 @@ public class ServingCounter extends Station {
 
         try {
             int reward = orderManager.processServedDish(dish);
+            if (onScoreUpdate != null) onScoreUpdate.accept(reward);
         } catch (OrderNotFoundException e) {
             // pinalti jika dish tidak sesuai dengan order yang ada
+            if (onScoreUpdate != null) onScoreUpdate.accept(-50);
         } catch (InvalidDataException e) {
             
         }

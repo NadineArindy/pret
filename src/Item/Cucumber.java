@@ -2,6 +2,10 @@ package src.Item;
 
 public class Cucumber extends Ingredient implements Chopable {
 
+    public Cucumber() {
+        super("Timun");
+    }
+
     public Cucumber(String name) {
         super(name);
     }

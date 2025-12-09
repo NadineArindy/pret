@@ -17,6 +17,9 @@ public class GameController {
     private KitchenLoop kitchenLoop;
     
     private String statusMessage = "";
+    
+    private int score = 0;
+    private double levelTimer = 180.0;
 
     // NEW MAP SIZE
     private int width = 14;
@@ -33,6 +36,18 @@ public class GameController {
         loadMapA();       // ← THE NEW MAP
         setupRecipes();
         orderManager.spawnRandomOrder();
+    }
+
+    public void addScore(int value) {
+        this.score += value;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public double getLevelTimer() {
+        return levelTimer;
     }
 
     // ===========================================================
@@ -66,18 +81,36 @@ public class GameController {
                     case 'C': addStation(new CuttingStation("Cut-" + x, p, 'C', 1, 3000)); break;
                     
                     case 'R':
-                        CookingStation stove = new CookingStation("Cook-" + x, p, 'R', 1, 10000);
-                        stove.addItem(new BoilingPot("Pot"));
+                        CookingStation stove = new CookingStation("Cook-" + x, p, 'R', 1, 12000);
+                        // Distribute Utensils: Middle stove gets a Pan for Shrimp
+                        if (x == 11) {
+                            stove.addItem(new FryingPan("Pan"));
+                        } else {
+                            stove.addItem(new BoilingPot("Pot"));
+                        }
                         addStation(stove);
                         break;
 
                     case 'A': addStation(new AssemblyStation("Asm-" + x, p, 'A', 1, 0)); break;
-                    case 'S': addStation(new ServingCounter("Serve-" + x, p, 'S', orderManager, kitchenLoop)); break;
+                    case 'S': addStation(new ServingCounter("Serve-" + x, p, 'S', orderManager, kitchenLoop, this::addScore)); break;
                     case 'T': addStation(new TrashStation("Trash-" + x, p, 'T')); break;
                     case 'W': addStation(new WashingStation("Wash-" + x, p, 'W')); break;
 
                     case 'I':
-                        addStation(new IngredientStorage("Ing-" + x, p, 'I', Ingredient.class, true));
+                        if (x == 0 && y == 3) {
+                             addStation(new IngredientStorage("RiceSto", p, 'K', Rice.class, true));
+                        } else if (x == 0 && y == 4) {
+                             addStation(new IngredientStorage("NoriSto", p, 'N', Nori.class, true));
+                        } else if (x == 0 && y == 5) {
+                             addStation(new IngredientStorage("FishSto", p, 'F', Fish.class, true));
+                        } else if (x == 13 && y == 3) {
+                             addStation(new IngredientStorage("CukeSto", p, 'U', Cucumber.class, true));
+                        } else if (x == 13 && y == 4) {
+                             addStation(new IngredientStorage("ShrimpSto", p, 'E', Shrimp.class, true));
+                        } else {
+                             // Fallback
+                             addStation(new IngredientStorage("Ing-" + x, p, 'I', Ingredient.class, true));
+                        }
                         break;
 
                     case 'P':
@@ -228,7 +261,12 @@ public class GameController {
         // before interaction (for debugging)
         Item before = chef.getInventory();
 
-        s.interact(chef);
+        try {
+            s.interact(chef);
+        } catch (RuntimeException e) {
+            setStatusMessage("Error: " + e.getMessage());
+            return;
+        }
 
         // after interaction
         Item after = chef.getInventory();
@@ -261,26 +299,34 @@ public class GameController {
     public int getHeight() { return height; }
 
     public void tick(double deltaTime) {
-    int ms = (int)(deltaTime * 1000);
+        int ms = (int)(deltaTime * 1000);
 
-    // Update all stations that have timers
-    for (Station s : stationMap.values()) {
-        if (s instanceof CuttingStation) {
-            ((CuttingStation) s).update(ms);
+        if (levelTimer > 0) {
+            levelTimer -= deltaTime;
+            if (levelTimer < 0) levelTimer = 0;
         }
-        if (s instanceof CookingStation) {
-            ((CookingStation) s).update(ms);
-        }
-        if (s instanceof WashingStation) {
-            ((WashingStation) s).update(ms);
-        }
-    }
 
-    // Update kitchen loop (plate respawn / sink cleaning)
-    kitchenLoop.update(ms);
+        // Update all stations that have timers
+        for (Station s : stationMap.values()) {
+            if (s instanceof CuttingStation) {
+                ((CuttingStation) s).update(ms);
+            }
+            if (s instanceof CookingStation) {
+                ((CookingStation) s).update(ms);
+            }
+            if (s instanceof WashingStation) {
+                ((WashingStation) s).update(ms);
+            }
+        }
 
-    // Handle order expiration
-        orderManager.purgeExpired();
+        // Update kitchen loop (plate respawn / sink cleaning)
+        kitchenLoop.update(ms);
+
+        // Handle order expiration
+        int penalty = orderManager.purgeExpired();
+        if (penalty > 0) {
+            addScore(-penalty);
+        }
     }
     public OrderManager getOrderManager() {
         return this.orderManager;

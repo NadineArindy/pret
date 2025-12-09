@@ -53,9 +53,8 @@ public class IngredientStorage extends Station {
         if(inHand instanceof Plate plateInHand && plateInHand.isClean() && onTop instanceof Preparable preparable && !(onTop instanceof KitchenUtensils)){
             try{
                 plateInHand.addIngredient(preparable);
-                itemOnTop = null;
-                itemOnTop = plateInHand;
-                chef.setInventory(null);
+                itemOnTop = null; // Removed from station
+                // Chef keeps plate
             } catch (RuntimeException e){}
             return;
         }
@@ -82,18 +81,24 @@ public class IngredientStorage extends Station {
             return;
         }
 
+        // Picking up logic
         if(inHand == null){
-            if(onTop == null){
+            // If item is on top, pick it up
+            if(onTop != null){
                 chef.setInventory(onTop);
                 itemOnTop = null;
                 return;
             }
 
-            Preparable newIngredient = dispenseIngredient();
-            chef.setInventory((Item) newIngredient);
+            // If nothing on top, but infinite supply, dispense new
+            if (infiniteSupply) {
+                Preparable newIngredient = dispenseIngredient();
+                chef.setInventory((Item) newIngredient);
+            }
             return;
         }
 
+        // Placing logic
         if(onTop == null){
             itemOnTop = inHand;
             chef.setInventory(null);

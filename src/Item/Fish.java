@@ -2,6 +2,10 @@ package src.Item;
 
 public class Fish extends Ingredient implements Chopable{
 
+    public Fish() {
+        super("Ikan");
+    }
+
     public Fish(String name) {
         super(name);
     }
@@ -20,8 +24,8 @@ public class Fish extends Ingredient implements Chopable{
 
     @Override
     public boolean isReady() {
-    return this.state == IngredientState.CHOPPED;
-}
+        return this.state == IngredientState.RAW;
+    }
 
     
 }

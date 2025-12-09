@@ -5,6 +5,8 @@ import src.Item.KitchenUtensils;
 import src.Item.Plate;
 import src.Item.Preparable;
 import src.Item.Cookable;
+import java.util.List;
+import java.util.ArrayList;
 
 public class CookingStation extends Workstation {
     private KitchenUtensils cookingUtensil;
@@ -99,40 +101,41 @@ public class CookingStation extends Workstation {
         Item inHand = chef.getInventory();
         Item onTop = peekTopItem(); 
 
-        //CASE 1: Chef memiliki piring bersih di tangan dan ada item di workstation tapi tidak berada di dalam utensil
-        if(inHand instanceof Plate plateInHand && plateInHand.isClean() && onTop instanceof Preparable preparable && !(onTop instanceof KitchenUtensils)){
-            try{
-                plateInHand.addIngredient(preparable);
-                removeTopItem();
-                addItem(plateInHand);
-                chef.setInventory(null);
-            } catch (RuntimeException e){}
-            return;
-        }
-
-        //CASE 2: Chef memiliki piring bersih di tangan dan ingredient di dalam utensil di station
-        if(inHand instanceof Plate plateInHand2 && plateInHand2.isClean() && onTop instanceof KitchenUtensils utensilOnTable){
-            try{
-                for(Preparable p : utensilOnTable.getContents()){
-                    plateInHand2.addIngredient(p);
+        // CASE 0: Direct Retrieval of Cooked Food (New Logic)
+        // If Chef hand is empty, and there is a Utensil on the stove with Ready (Cooked) content, pick up the content.
+        if (inHand == null && onTop instanceof KitchenUtensils utensilOnTable && !utensilOnTable.getContents().isEmpty()) {
+            // Check if contents are ready/cooked. Just check the first one or all?
+            // Usually, we scoop out the result.
+            boolean hasReadyFood = false;
+            for(Preparable p : utensilOnTable.getContents()){
+                if (p.isReady()) {
+                    hasReadyFood = true;
+                    break;
                 }
-                utensilOnTable.getContents().clear();
-            } catch (RuntimeException e){}
-            return;
-        }
+            }
 
-        //CASE 3: Ingredient di dalam utensil di tangan chef dan ada piring bersih di station
-        if(inHand instanceof KitchenUtensils utensilInHand && onTop instanceof Plate plateOnTable && plateOnTable.isClean()){
-           try{
-                for(Preparable p : utensilInHand.getContents()){
-                    plateOnTable.addIngredient(p);
+            if (hasReadyFood) {
+                // Take the food (assuming capacity 1 for now, or take first valid item)
+                // Since Rice/Shrimp logic is 1 item per utensil usually?
+                // Pot capacity is 1.
+                List<Preparable> contents = new ArrayList<>(utensilOnTable.getContents());
+                 if (!contents.isEmpty()) {
+                    Preparable food = contents.get(0);
+                    if (food instanceof Item) {
+                        chef.setInventory((Item) food);
+                        utensilOnTable.getContents().remove(food);
+                        // If empty, stop cooking logic if it was running?
+                        if (utensilOnTable.getContents().isEmpty() && isCooking && cookingUtensil == utensilOnTable) {
+                            stopCooking();
+                        }
+                        return;
+                    }
                 }
-                utensilInHand.getContents().clear();
-            } catch (RuntimeException e){}
-            return;
+            }
         }
 
-        //CASE 4: Ingredient di tangan chef dan Utensil (Pot/Pan) di station
+
+        // CASE 4 (Cooking Specific): Ingredient in Hand -> Add to Utensil on Station
         if (inHand instanceof Preparable preparable && onTop instanceof KitchenUtensils utensilOnTable) {
             try {
                 // Coba masukkan ingredient ke dalam utensil
@@ -150,6 +153,7 @@ public class CookingStation extends Workstation {
             return;
         }
 
+        // CASE 5: Place Utensil (Pot/Pan) onto Station
         if (inHand instanceof KitchenUtensils utensilInHand2 && !isFull()) {
             if (addItem(utensilInHand2)) {
                 chef.setInventory(null);
@@ -160,17 +164,28 @@ public class CookingStation extends Workstation {
             return;
         }
 
+        // Picking up the Utensil itself (handled by Workstation.interact default if Hand is Empty)
+        // But we added Case 0 which intercepts picking up FOOD.
+        // If Food is NOT ready, Case 0 fails, so it falls through to here.
+        // Or if Utensil is empty.
+        
+        // However, we must ensure if we pick up the Utensil, we stop cooking.
+        // Workstation default interact doesn't know about 'stopCooking'.
+        // So we might need to intercept the pickup here.
+        
         if (inHand == null && onTop instanceof KitchenUtensils utensilOnTable2) {
-            Item taken = removeTopItem();
-            chef.setInventory(taken);
+             // If we reached here, Case 0 didn't trigger (Food not ready or empty).
+             // So picking up the Pot is valid.
+             Item taken = removeTopItem();
+             chef.setInventory(taken);
 
-            if (utensilOnTable2 == cookingUtensil) {
-                stopCooking();
-            }
-            return;
+             if (utensilOnTable2 == cookingUtensil) {
+                 stopCooking();
+             }
+             return;
         }
 
-        //fallback
+        // Fallback to Workstation (Handles Plating Cases 1-3)
         super.interact(chef);
     }
 

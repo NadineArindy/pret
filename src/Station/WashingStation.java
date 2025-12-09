@@ -87,6 +87,10 @@ public class WashingStation extends Station {
         isWashing = false;
         remainingWashTime = 0;
     }
+    
+    public int getRemainingWashTime() {
+        return remainingWashTime;
+    }
 
     @Override
     public void interact(Chef chef) {

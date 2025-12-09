@@ -2,6 +2,10 @@ package src.Item;
 
 public class Rice extends Ingredient implements Cookable{
 
+    public Rice() {
+        super("Nasi");
+    }
+
     public Rice(String name) {
         super(name);
     }

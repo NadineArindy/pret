@@ -2,6 +2,10 @@ package src.Item;
 
 public class Nori extends Ingredient{
 
+    public Nori() {
+        super("Nori");
+    }
+
     public Nori(String name) {
         super(name);
     }

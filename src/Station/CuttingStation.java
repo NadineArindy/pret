@@ -83,41 +83,9 @@ public class CuttingStation extends Workstation {
         }
 
         Item inHand = chef.getInventory();
-        Item onTop = peekTopItem(); 
-
-        //CASE 1: Chef memiliki piring bersih di tangan dan ada item di workstation tapi tidak berada di dalam utensil
-        if(inHand instanceof Plate plateInHand && plateInHand.isClean() && onTop instanceof Preparable preparable && !(onTop instanceof KitchenUtensils)){
-            try{
-                plateInHand.addIngredient(preparable);
-                removeTopItem();
-                addItem(plateInHand);
-                chef.setInventory(null);
-            } catch (RuntimeException e){}
-            return;
-        }
-
-        //CASE 2: Chef memiliki piring bersih di tangan dan ingredient di dalam utensil di station
-        if(inHand instanceof Plate plateInHand2 && plateInHand2.isClean() && onTop instanceof KitchenUtensils utensilOnTable){
-            try{
-                for(Preparable p : utensilOnTable.getContents()){
-                    plateInHand2.addIngredient(p);
-                }
-                utensilOnTable.getContents().clear();
-            } catch (RuntimeException e){}
-            return;
-        }
-
-        //CASE 3: Ingredient di dalam utensil di tangan chef dan ada piring bersih di station
-        if(inHand instanceof KitchenUtensils utensilInHand && onTop instanceof Plate plateOnTable && plateOnTable.isClean()){
-           try{
-                for(Preparable p : utensilInHand.getContents()){
-                    plateOnTable.addIngredient(p);
-                }
-                utensilInHand.getContents().clear();
-            } catch (RuntimeException e){}
-            return;
-        }
-
+        
+        // --- CUTTING SPECIFIC LOGIC ---
+        // Logic to PLACE valid chopable ingredient if empty
         if(inHand instanceof Preparable preparable2 && preparable2 instanceof Chopable && currentIngredient == null && !isCutting){
             currentIngredient = preparable2;
              chef.setInventory(null);
@@ -126,18 +94,21 @@ public class CuttingStation extends Workstation {
             return;
         }
 
+        // Logic to PICK UP result if done
         if (inHand == null && currentIngredient != null && !isCutting && remainingTime <= 0) {
             chef.setInventory((Item) currentIngredient);
             currentIngredient = null;
             return;
         }
 
+        // Logic to START/RESUME cutting (if just interacting without item?)
+        // The previous code had: if(inHand == null && currentIngredient != null && !isCutting && remainingTime > 0)
         if (inHand == null && currentIngredient != null && !isCutting && remainingTime > 0) {
             isCutting = true;
             return;
         }
 
-        //fallback
+        // --- FALLBACK TO GENERIC PLATING / PICK / PLACE ---
         super.interact(chef);
     }
 

@@ -2,6 +2,10 @@ package src.Item;
 
 public class Shrimp extends Ingredient implements Chopable, Cookable {
 
+    public Shrimp() {
+        super("Udang");
+    }
+
     public Shrimp(String name) {
         super(name);
     }
@@ -9,6 +13,15 @@ public class Shrimp extends Ingredient implements Chopable, Cookable {
     @Override
     public boolean isCooked() {
         return state == IngredientState.COOKED;
+    }
+
+    @Override
+    public void chop() {
+        if (state == IngredientState.RAW){
+            state = IngredientState.CHOPPED;
+        } else {
+            throw new InvalidIngredientStateException("Cannot chop " + getName() + " in state " + state);
+        }
     }
 
     @Override
@@ -31,17 +44,8 @@ public class Shrimp extends Ingredient implements Chopable, Cookable {
     }
 
     @Override
-    public void chop() {
-        if (state == IngredientState.RAW){
-            state = IngredientState.CHOPPED;
-        } else {
-            throw new InvalidIngredientStateException("Cannot chop" + getName() + " in state" + state);
-        }
-    }
-
-    @Override
     public boolean isReady() {
-        return isCooked() && isChopped();
+        return isCooked();
     }
     
 }
