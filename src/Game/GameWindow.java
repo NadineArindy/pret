@@ -16,12 +16,15 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.List;
 
 public class GameWindow extends Application {
 
     private GameController controller;
     private static final int TILE_SIZE = 64;
-    private static final int UI_HEIGHT = 120;
+    private static final int UI_HEIGHT = 60; // Reduced height since orders move to side
+    private static final int SIDEBAR_WIDTH = 220; // Width for the Order Sidebar
     private Canvas canvas;
 
     @Override
@@ -31,11 +34,16 @@ public class GameWindow extends Application {
         int mapWidth = controller.getWidth() * TILE_SIZE;
         int mapHeight = controller.getHeight() * TILE_SIZE;
         
-        // Canvas sized for Map + UI
-        canvas = new Canvas(mapWidth, mapHeight + UI_HEIGHT);
+        // Canvas sized for Map + Sidebar + Top UI
+        // Total Width = Map + Sidebar
+        // Total Height = UI + Map
+        int totalWidth = mapWidth + SIDEBAR_WIDTH;
+        int totalHeight = mapHeight + UI_HEIGHT;
+        
+        canvas = new Canvas(totalWidth, totalHeight);
         
         StackPane root = new StackPane(canvas);
-        Scene scene = new Scene(root, mapWidth, mapHeight + UI_HEIGHT);
+        Scene scene = new Scene(root, totalWidth, totalHeight);
         
         // Input Handling
         scene.setOnKeyPressed(this::handleInput);
@@ -76,21 +84,27 @@ public class GameWindow extends Application {
     }
 
     private void render(GraphicsContext gc) {
-        // Clear background
+        // Clear entire background
         gc.setFill(Color.DARKGRAY);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        // 1. Render UI (Top)
-        renderUI(gc);
+        // 1. Render Top UI (Score, Time, Status)
+        renderTopUI(gc);
 
-        // 2. Render Map (Below UI)
+        // 2. Render Map (Below UI, Left Side)
         gc.save();
         gc.translate(0, UI_HEIGHT);
         renderMap(gc);
         gc.restore();
+
+        // 3. Render Order Sidebar (Right Side, Full Height)
+        gc.save();
+        gc.translate(controller.getWidth() * TILE_SIZE, 0); // Move to the right of the map
+        renderOrders(gc);
+        gc.restore();
     }
 
-    private void renderUI(GraphicsContext gc) {
+    private void renderTopUI(GraphicsContext gc) {
         // Background
         gc.setFill(Color.rgb(50, 50, 50));
         gc.fillRect(0, 0, canvas.getWidth(), UI_HEIGHT);
@@ -99,39 +113,69 @@ public class GameWindow extends Application {
         gc.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         
         // Score & Time
-        gc.fillText(String.format("Score: %d", controller.getScore()), 20, 30);
-        gc.fillText(String.format("Time: %.1f", controller.getLevelTimer()), 150, 30);
+        gc.fillText(String.format("Score: %d", controller.getScore()), 20, 35);
+        gc.fillText(String.format("Time: %.1f", controller.getLevelTimer()), 150, 35);
         
         // Status Message
         gc.setFont(Font.font("Arial", 14));
-        gc.fillText("Status: " + controller.getStatusMessage(), 300, 30);
+        gc.fillText("Status: " + controller.getStatusMessage(), 300, 35);
+    }
 
-        // Orders
-        gc.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        gc.fillText("Active Orders:", 20, 60);
+    private void renderOrders(GraphicsContext gc) {
+        // Sidebar Background
+        gc.setFill(Color.rgb(40, 40, 40));
+        gc.fillRect(0, 0, SIDEBAR_WIDTH, canvas.getHeight());
 
-        int x = 20;
-        int y = 70;
+        // Title
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        gc.fillText("ORDERS", 20, 30);
+        
+        // Separator
+        gc.setStroke(Color.GRAY);
+        gc.strokeLine(10, 40, SIDEBAR_WIDTH - 10, 40);
+
+        int startY = 50;
+        int gap = 110; // Height per order box
+
         for (Order order : controller.getOrderManager().getActiveOrders()) {
-            // Order Box
+            // Draw Order Box
             gc.setFill(Color.rgb(255, 250, 205)); // LemonChiffon
-            gc.fillRect(x, y, 140, 45);
+            gc.fillRect(10, startY, SIDEBAR_WIDTH - 20, gap - 10);
             gc.setStroke(Color.ORANGE);
-            gc.strokeRect(x, y, 140, 45);
+            gc.strokeRect(10, startY, SIDEBAR_WIDTH - 20, gap - 10);
 
-            // Text
+            // Recipe Name
             gc.setFill(Color.BLACK);
+            gc.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+            gc.fillText(order.getRecipe().getName(), 15, startY + 20);
+
+            // Timer & Reward
             gc.setFont(Font.font("Arial", 12));
-            gc.fillText(order.getRecipe().getName(), x + 5, y + 15);
+            gc.fillText(String.format("Time: %.0fs   +$%d", order.getTimeLeft(), order.getReward()), 15, startY + 35);
             
-            // Progress Bar (Time Left)
-            double progress = order.getTimeLeft() / 60.0; // Assuming 60s max for viz, or order.initialTime
-            // Better: just show text
-            gc.fillText(String.format("Time: %.0fs  R: %d", order.getTimeLeft(), order.getReward()), x + 5, y + 35);
+            // Ingredients List
+            gc.setFont(Font.font("Arial", 10));
+            int ingY = startY + 50;
+            List<Ingredient> required = order.getRecipe().getRequiredIngredients();
+            for (Ingredient ing : required) {
+                // Shorten state names
+                String state = "";
+                if (ing.getState() == IngredientState.COOKED) state = "(Ck)";
+                else if (ing.getState() == IngredientState.CHOPPED) state = "(Ch)";
+                else if (ing.getState() == IngredientState.RAW) state = "(Raw)";
+                
+                gc.fillText("- " + ing.getName() + " " + state, 15, ingY);
+                ingY += 12;
+            }
+
+            // Progress Bar (Time)
+            double maxTime = 60.0; // Estimate
+            double pct = Math.max(0, order.getTimeLeft() / maxTime);
+            gc.setFill(Color.RED);
+            gc.fillRect(15, startY + gap - 18, (SIDEBAR_WIDTH - 30) * pct, 5);
             
-            // Draw Penalty?
-            
-            x += 150;
+            startY += gap;
         }
     }
 
@@ -262,6 +306,15 @@ public class GameWindow extends Application {
         }
     }
 
+    private Color getIngredientColor(String name) {
+        if (name.contains("Rice")) return Color.WHITESMOKE;
+        if (name.contains("Fish")) return Color.SALMON;
+        if (name.contains("Nori")) return Color.BLACK;
+        if (name.contains("Cucumber")) return Color.GREEN;
+        if (name.contains("Shrimp")) return Color.PINK;
+        return Color.GREEN;
+    }
+
     private void drawItem(GraphicsContext gc, double x, double y, Item item) {
         if (item instanceof Plate) {
             gc.setFill(Color.WHITE);
@@ -269,21 +322,26 @@ public class GameWindow extends Application {
             gc.setStroke(Color.BLACK);
             gc.strokeOval(x, y, TILE_SIZE/2.5, TILE_SIZE/2.5);
 
-            if (!((Plate) item).getContents().isEmpty()) {
-                gc.setFill(Color.ORANGE);
-                gc.fillOval(x + 5, y + 5, TILE_SIZE/5, TILE_SIZE/5);
+            Set<Preparable> contents = ((Plate) item).getContents();
+            if (!contents.isEmpty()) {
+                int i = 0;
+                double miniSize = TILE_SIZE / 6.0;
+                for (Preparable p : contents) {
+                    if (p instanceof Ingredient) {
+                        gc.setFill(getIngredientColor(((Ingredient) p).getName()));
+                        // Arranging in a small cluster
+                        double offX = (i % 2) * miniSize + 5;
+                        double offY = (i / 2) * miniSize + 5;
+                        gc.fillOval(x + offX, y + offY, miniSize, miniSize);
+                        i++;
+                        if (i >= 4) break; // Limit viz to 4 items
+                    }
+                }
             }
 
         } else if (item instanceof Ingredient) {
             String name = ((Ingredient) item).getName();
-            Color c = Color.GREEN;
-            if (name.contains("Rice")) c = Color.WHITESMOKE;
-            if (name.contains("Fish")) c = Color.SALMON;
-            if (name.contains("Nori")) c = Color.BLACK;
-            if (name.contains("Cucumber")) c = Color.GREEN;
-            if (name.contains("Shrimp")) c = Color.PINK;
-
-            gc.setFill(c);
+            gc.setFill(getIngredientColor(name));
             gc.fillRect(x, y, TILE_SIZE/2.5, TILE_SIZE/2.5);
             
             IngredientState state = ((Ingredient) item).getState();

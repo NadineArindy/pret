@@ -306,6 +306,11 @@ public class GameController {
             if (levelTimer < 0) levelTimer = 0;
         }
 
+        // Check and spawn orders if needed
+        if (orderManager.getActiveOrders().size() < 3) {
+            orderManager.spawnRandomOrder();
+        }
+
         // Update all stations that have timers
         for (Station s : stationMap.values()) {
             if (s instanceof CuttingStation) {
