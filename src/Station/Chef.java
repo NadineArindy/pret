@@ -65,4 +65,17 @@ public class Chef {
                 ", name='" + name + '\'' +
                 '}';
     }
+    public Position getFacingPosition() {
+    int x = position.getX();
+    int y = position.getY();
+
+    switch (direction) {
+        case UP:    return new Position(x, y - 1);
+        case DOWN:  return new Position(x, y + 1);
+        case LEFT:  return new Position(x - 1, y);
+        case RIGHT: return new Position(x + 1, y);
+        default:    return position;
+    }
+}
+
 }

@@ -20,7 +20,8 @@ public class Fish extends Ingredient implements Chopable{
 
     @Override
     public boolean isReady() {
-        return isChopped();
-    }
+    return this.state == IngredientState.CHOPPED;
+}
+
     
 }

@@ -89,26 +89,34 @@ public class GameWindow extends JFrame {
         }
 
         private void renderUI(Graphics2D g2) {
+
+            // 1. Draw background FIRST
             g2.setColor(Color.DARK_GRAY);
             g2.fillRect(0, 0, getWidth(), UI_HEIGHT);
-            
+
+            // 2. Draw status AFTER BACKGROUND
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("Arial", Font.PLAIN, 14));
+            g2.drawString("Status: " + controller.getStatusMessage(), 10, UI_HEIGHT - 10);
+
+            // 3. Draw Orders
             g2.setColor(Color.WHITE);
             g2.setFont(new Font("Arial", Font.BOLD, 16));
             g2.drawString("Orders:", 10, 25);
-            
+
             int x = 80;
             for (Order order : controller.getOrderManager().getActiveOrders()) {
-                g2.setColor(new Color(255, 255, 224)); // Light Yellow
+                g2.setColor(new Color(255, 255, 224));
                 g2.fillRect(x, 5, 100, 90);
                 g2.setColor(Color.ORANGE);
                 g2.drawRect(x, 5, 100, 90);
-                
+
                 g2.setColor(Color.BLACK);
                 g2.setFont(new Font("Arial", Font.PLAIN, 12));
                 g2.drawString(order.getRecipe().getName(), x + 5, 25);
                 g2.drawString("Time: " + (int)order.getTimeLeft(), x + 5, 45);
                 g2.drawString("Rew: " + order.getReward(), x + 5, 65);
-                
+
                 x += 110;
             }
         }
@@ -271,4 +279,7 @@ public class GameWindow extends JFrame {
             e.printStackTrace();
         }
     }
+
+    // GameController.java
+    
 }

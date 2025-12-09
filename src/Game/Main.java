@@ -1,3 +1,5 @@
+package src.Game;
+
 import src.Exception.*;
 import src.Item.*;
 import java.util.ArrayList;

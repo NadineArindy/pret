@@ -1,6 +1,5 @@
 package src.Station;
 
-
 public abstract class Station {
     private final String id;
     private final Position position;

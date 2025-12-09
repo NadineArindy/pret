@@ -64,7 +64,6 @@ public class ServingCounter extends Station {
 
         try {
             int reward = orderManager.processServedDish(dish);
-            // TODO: sambung ke ScoreManager?
         } catch (OrderNotFoundException e) {
             // pinalti jika dish tidak sesuai dengan order yang ada
         } catch (InvalidDataException e) {
