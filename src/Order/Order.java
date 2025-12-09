@@ -41,6 +41,11 @@ public class Order {
         return elapsed >= timeLimitSec;
     }
 
+    public double getTimeLeft() {
+        long elapsedMillis = System.currentTimeMillis() - createdAt;
+        return Math.max(0, timeLimitSec - (elapsedMillis / 1000.0));
+    }
+
     @Override
     public String toString() {
         return "Order#" + id + " (" + recipe.getName() + ")";

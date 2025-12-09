@@ -132,6 +132,24 @@ public class CookingStation extends Workstation {
             return;
         }
 
+        //CASE 4: Ingredient di tangan chef dan Utensil (Pot/Pan) di station
+        if (inHand instanceof Preparable preparable && onTop instanceof KitchenUtensils utensilOnTable) {
+            try {
+                // Coba masukkan ingredient ke dalam utensil
+                utensilOnTable.addIngredient(preparable);
+                // Jika berhasil, kosongkan tangan chef
+                chef.setInventory(null);
+                
+                // Cek apakah perlu mulai masak (misal baru aja masukin nasi)
+                if (hasCookableContents(utensilOnTable) && !isCooking) {
+                    startCooking(utensilOnTable);
+                }
+            } catch (RuntimeException e) {
+                // Ignore incompatibility/full
+            }
+            return;
+        }
+
         if (inHand instanceof KitchenUtensils utensilInHand2 && !isFull()) {
             if (addItem(utensilInHand2)) {
                 chef.setInventory(null);
