@@ -49,9 +49,10 @@ public class GameController {
             "I..A..A......A",
             "S..A..A......A",
             "S..X..T..WWP.X",
-            "X........X....X",
+            "X........X...X",
             "XXXXXXXXXXXXXX"
         };
+
 
         for (int y = 0; y < MAP.length; y++) {
             for (int x = 0; x < MAP[y].length(); x++) {
@@ -61,46 +62,29 @@ public class GameController {
 
                 switch (c) {
 
-                    case 'X':
-                        addStation(new WallStation("Wall-" + x + "-" + y, p, 'X'));
-                        break;
-
-                    case 'C':
-                        addStation(new CuttingStation("Cut-" + x, p, 'C', 1, 3000));
-                        break;
-
+                    case 'X': addStation(new WallStation("Wall-" + x + "-" + y, p, 'X')); break;
+                    case 'C': addStation(new CuttingStation("Cut-" + x, p, 'C', 1, 3000)); break;
+                    
                     case 'R':
-                        // Cooking with a required utensil
                         CookingStation stove = new CookingStation("Cook-" + x, p, 'R', 1, 10000);
-                        stove.addItem(new BoilingPot("Pot")); // default pot
+                        stove.addItem(new BoilingPot("Pot"));
                         addStation(stove);
                         break;
 
-                    case 'A':
-                        addStation(new AssemblyStation("Asm-" + x, p, 'A', 1, 0));
-                        break;
-
-                    case 'S':
-                        addStation(new ServingCounter("Serve-" + x, p, 'S', orderManager, kitchenLoop));
-                        break;
-
-                    case 'T':
-                        addStation(new TrashStation("Trash-" + x, p, 'T'));
-                        break;
+                    case 'A': addStation(new AssemblyStation("Asm-" + x, p, 'A', 1, 0)); break;
+                    case 'S': addStation(new ServingCounter("Serve-" + x, p, 'S', orderManager, kitchenLoop)); break;
+                    case 'T': addStation(new TrashStation("Trash-" + x, p, 'T')); break;
+                    case 'W': addStation(new WashingStation("Wash-" + x, p, 'W')); break;
 
                     case 'I':
                         addStation(new IngredientStorage("Ing-" + x, p, 'I', Ingredient.class, true));
-                        break;
-
-                    case 'W':
-                        addStation(new WashingStation("Wash-" + x, p, 'W'));
                         break;
 
                     case 'P':
                         PlateStorage ps = new PlateStorage("Plate-" + x, p, 'P', 4);
                         for (int i = 0; i < 4; i++) ps.addPlate(new Plate("Plate"));
                         addStation(ps);
-                        kitchenLoop = new KitchenLoop(ps); // reassign real PS
+                        kitchenLoop = new KitchenLoop(ps);
                         break;
 
                     case 'V':
@@ -109,16 +93,13 @@ public class GameController {
 
                     case '.':
                     default:
-                        // walkable
+                        // Walkable
                         break;
                 }
             }
         }
-
-        // default active chef
         if (!chefs.isEmpty()) activeChefIndex = 0;
     }
-
     // ------------------------------------------------------------
     private void addStation(Station s) {
         stationMap.put(s.getPosition(), s);
